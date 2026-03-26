@@ -1,67 +1,78 @@
 # AI Component Generator
 
-Generate beautiful React + Tailwind UI components from plain English descriptions — with live preview and streaming code output.
+An advanced, production-grade AI development tool that transforms plain English and design files into modular, accessible, and brand-compliant React + Tailwind CSS components. 
 
-Built with **Next.js 14**, **TypeScript**, **Groq (Llama-3.3-70B)**, and **Tailwind CSS**.
+Built as an extremely robust alternative to basic AI generators (like v0 or Bolt), this tool adds heavy engineering constraints like strict brand enforcement, visual DOM targeting, axe-core accessibility auditing, and auto-modularization algorithms.
 
-## Features
+## 🌟 Key Features
 
-- ⚡ **Streaming generation** — code appears token by token, <2s to first output
-- 🎨 **Live preview** — component renders instantly in a sandboxed iframe
-- 📋 **Copy or download** as `.tsx` with one click
-- 💡 **6 example prompts** to get started fast
-- 🌙 **Dark IDE-style UI** with syntax highlighting
+### 1. Visual DOM Targeting (Iterative Chat-to-Edit)
+Instead of re-generating an entire UI to change a single button, click any element in the live preview iframe. The element's exact HTML is passed to the LLM (Groq Llama 3) along with your new instruction, ensuring hyper-precise edits without breaking the rest of the component.
 
-## Setup
+### 2. Strict Brand Enforcement
+Lock the AI into your company's design system. Configure your primary, secondary, background, and text colors along with font family and border radius. This injects hard constraints into the LLM system prompt and dynamically overrides CSS variables in the sandboxed preview, guaranteeing 100% brand adherence.
 
-### 1. Clone and install
+### 3. Auto-Modularization Engine
+Don't settle for monolithic 500-line components. Click "Split Files" to pass the generated code through an LLM architect. It parses the monolithic file and returns a structured JSON map, breaking the UI down into atomic files (e.g., `Card.tsx`, `Button.tsx`, `Layout.tsx`).
 
-```bash
-git clone <your-repo-url>
-cd ai-component-gen
-npm install
-```
+### 4. A/B Variant Generation
+Unsure of the design direction? Generate two alternative designs in parallel from the same prompt. Compare them side-by-side in real-time, pick your favourite ("Use This"), and continue editing from that specific branch.
 
-### 2. Get a Groq API key (free)
+### 5. Accessibility Auditor (`axe-core`)
+After every generation, `axe-core` is automatically injected into the iframe to scan the new DOM. The "A11y" tab immediately flags Contrast, ARIA, and semantic HTML violations by severity (Critical, Serious, Moderate, Minor), mapping them alongside the exact code snippets that failed.
 
-Sign up at [https://console.groq.com](https://console.groq.com) — the free tier is generous.
+### 6. Figma JSON Import
+Skip the prompt entirely. Copy the raw JSON structure of any node in Figma (via Right Click -> Copy as JSON) and paste it into the tool. The LLM intelligently parses the layout, colors, typography, and structure to write a highly detailed React prompt.
 
-### 3. Configure environment
+### 7. Responsive Viewport Constraints
+Test how the AI's Tailwind utility classes hold up across devices. Toggle the live iframe preview directly between Mobile (375px), Tablet (768px), and Full Desktop constraints with a single click.
 
-```bash
-cp .env.local.example .env.local
-# Edit .env.local and add your GROQ_API_KEY
-```
+## 🛠️ Tech Stack
 
-### 4. Run locally
+*   **Framework:** Next.js 14 (App Router)
+*   **Language:** TypeScript
+*   **Styling:** Tailwind CSS
+*   **AI SDK:** Groq Cloud (Llama 3.3 70B Versatile model)
+*   **Sandboxing:** React + Babel standalone compiled in-browser via `srcdoc` iframes
+*   **Icons:** `lucide-react`
 
-```bash
-npm run dev
-# Open http://localhost:3000
-```
+## 🚀 Getting Started
 
-### 5. Deploy to Vercel
+### Prerequisites
+You will need Node.js installed on your machine and a free [Groq API Key](https://console.groq.com/keys).
 
-```bash
-npx vercel
-# Set GROQ_API_KEY in Vercel dashboard → Settings → Environment Variables
-```
+### Installation
 
-## Tech Stack
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/aryan-chopra-dev/Component-Builder-Tool.git
+    cd Component-Builder-Tool
+    ```
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
-| LLM | Groq API — Llama 3.3 70B |
-| Styling | Tailwind CSS |
-| Preview sandbox | Babel Standalone + React CDN |
-| Deployment | Vercel |
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-## How it works
+3.  **Set up Environment Variables:**
+    Copy the sample environment file and add your Groq API key:
+    ```bash
+    cp .env.local.example .env.local
+    ```
+    Open `.env.local` and add your key: `GROQ_API_KEY=gsk_your_api_key_here`
 
-1. User describes a component in plain English
-2. Next.js API route streams the LLM response chunk-by-chunk using Groq's streaming API
-3. The frontend accumulates tokens in real time via `ReadableStream`
-4. The generated code is injected into a sandboxed `<iframe>` with Babel, React, and Tailwind loaded from CDN
-5. The component renders live — no build step needed
+4.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
+
+5.  **Open the app:**
+    Visit `http://localhost:3000` in your browser.
+
+## 🏗️ Core Architecture Overview
+
+This project bypasses common AI wrapper limitations by introducing middle-tier engineering constraints:
+
+*   **Streaming & Token Optimization:** The `/api/generate` endpoint streams responses back to the client. Crucially, chat history is purposefully truncated; only the `currentCode` and the new instruction are sent to the LLM. This prevents token runaway during long chat sessions, drastically reducing daily token limits.
+*   **In-Browser Compilation:** The `LivePreview` component does not rely on a complex Node backend to bundle code. It writes the React code, Tailwind CDN, and Babel compiler directly into an iframe's `srcdoc`, compiling React on the fly entirely in the client's browser.
+*   **Cross-Frame Messaging:** The parent React app and the sandboxed iframe communicate securely via `window.postMessage`. This enables the visual targeting script (inside the iframe) to send hovering/click DOM nodes back up to the parent `Generator` state.
