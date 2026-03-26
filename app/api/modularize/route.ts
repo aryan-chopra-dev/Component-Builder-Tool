@@ -1,0 +1,85 @@
+import Groq from "groq-sdk";
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+const MODULARIZE_SYSTEM_PROMPT = `You are an expert React architect. Your job is to split a monolithic React component into well-named atomic sub-components.
+
+RULES:
+1. Analyze the component and identify logical pieces (layout, cards, buttons, forms, navigation, etc.)
+2. Split it into 2-6 focused, reusable components plus one main Page/App file that imports them all.
+3. Output ONLY a single valid JSON object — no markdown, no code fences, no explanations.
+4. The JSON must be: { "ComponentName.tsx": "full code string", ... }
+5. Each file must be a complete, standalone React component with proper exports.
+6. Remove all imports from file content — React hooks (useState, useEffect, etc.) are globally available.
+7. The main page file should be named after the component (e.g. "PricingPage.tsx") and import all sub-components using: const SubComp = window.SubComp; (since there's no bundler).
+8. Make sure every referenced sub-component is actually defined in its own file in the output.
+9. Keep all logic and data in the appropriate component. Don't create empty or trivial components.
+
+OUTPUT FORMAT — respond with ONLY this JSON, nothing else:
+{
+  "MainPage.tsx": "function MainPage() { ... } export default MainPage;",
+  "Button.tsx": "function Button({ children, onClick }) { ... } export default Button;",
+  "Card.tsx": "function Card({ title, value }) { ... } export default Card;"
+}`;
+
+export async function POST(req: Request) {
+  const { code } = await req.json();
+
+  if (!code || typeof code !== "string") {
+    return new Response(JSON.stringify({ error: "code is required" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (!process.env.GROQ_API_KEY) {
+    return new Response(JSON.stringify({ error: "GROQ_API_KEY is not configured" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: MODULARIZE_SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: `Split this component into atomic files:\n\n${code}`,
+        },
+      ],
+      stream: false,
+      max_tokens: 4000,
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+    });
+
+    const raw = completion.choices[0]?.message?.content ?? "{}";
+
+    let files: Record<string, string>;
+    try {
+      files = JSON.parse(raw);
+    } catch {
+      // Try to extract JSON from surrounding text
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (!match) {
+        return new Response(JSON.stringify({ error: "Failed to parse JSON from model response" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      files = JSON.parse(match[0]);
+    }
+
+    return new Response(JSON.stringify({ files }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Modularization failed";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
