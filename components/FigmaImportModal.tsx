@@ -10,8 +10,8 @@ interface FigmaImportModalProps {
 
 const INSTRUCTIONS = [
   "In Figma, select the frame or component you want to import",
-  'Right-click → "Copy/Paste as" → "Copy as JSON" (or use Ctrl+Shift+C with the Tokens plugin)',
-  "Paste the copied JSON below and click Convert",
+  "Right click -> Copy link (or 'Copy as JSON' if you use the Tokens plugin)",
+  "Paste the URL (or JSON) below and click Convert",
 ];
 
 export default function FigmaImportModal({ onImport, onClose }: FigmaImportModalProps) {
@@ -80,11 +80,14 @@ export default function FigmaImportModal({ onImport, onClose }: FigmaImportModal
 
         {/* JSON input */}
         <div className="px-5 py-4 flex flex-col gap-3">
-          <label className="text-xs text-gray-400 font-medium">Paste Figma JSON</label>
+          <label className="text-xs text-gray-400 font-medium flex justify-between">
+            Paste Figma URL or JSON
+            <span className="text-[10px] text-yellow-500/80">Requires FIGMA_ACCESS_TOKEN in env for URLs</span>
+          </label>
           <textarea
             value={json}
             onChange={(e) => setJson(e.target.value)}
-            placeholder={'{\n  "id": "1:2",\n  "name": "Card",\n  "type": "FRAME",\n  ...\n}'}
+            placeholder={'https://www.figma.com/design/.../?node-id=...\nOR\n{\n  "id": "1:2",\n  "name": "Card",\n  "type": "FRAME",\n  ...\n}'}
             rows={8}
             className="w-full bg-[#13132a] border border-[#2d2d4e] rounded-lg p-3 text-xs text-gray-300 font-mono resize-none focus:outline-none focus:border-violet-500 placeholder-gray-700 transition-colors"
           />

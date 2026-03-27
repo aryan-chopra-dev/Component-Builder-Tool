@@ -1,6 +1,4 @@
-import Groq from "groq-sdk";
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const SYSTEM_PROMPT = `You are a design-to-code expert. Your job is to analyze a Figma component's JSON node structure and convert it into a concise, precise React + Tailwind component generation prompt.
 
@@ -24,41 +22,77 @@ export async function POST(req: Request) {
     });
   }
 
-  if (!process.env.GROQ_API_KEY) {
-    return new Response(JSON.stringify({ error: "GROQ_API_KEY is not configured" }), {
+  if (!process.env.GEMINI_API_KEY) {
+    return new Response(JSON.stringify({ error: "GEMINI_API_KEY is not configured" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // Validate it looks like JSON before sending to LLM
-  try {
-    JSON.parse(figmaJson);
-  } catch {
-    return new Response(
-      JSON.stringify({ error: "Invalid JSON — make sure you copied the Figma node JSON correctly." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+  let finalJsonString = figmaJson;
+
+  // Check if it's a URL instead of JSON
+  const urlMatch = figmaJson.match(/(?:file|design)\/([a-zA-Z0-9]+)\/.*[?&]node-id=([^&]+)/);
+  if (urlMatch) {
+    const fileKey = urlMatch[1];
+    const nodeIdRaw = urlMatch[2];
+    // Figma browser URLs use `-` (e.g. 123-456) or `%3A` instead of the required API colon `:`
+    // We global-replace all hyphens because some deeply nested nodes have multiple (e.g. 10-20-30)
+    const nodeId = decodeURIComponent(nodeIdRaw).replace(/-/g, ":").trim();
+
+    if (!process.env.FIGMA_ACCESS_TOKEN) {
+      return new Response(
+        JSON.stringify({ error: "You provided a Figma URL, but FIGMA_ACCESS_TOKEN is missing in .env.local" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    try {
+      const resp = await fetch(`https://api.figma.com/v1/files/${fileKey}/nodes?ids=${nodeId}`, {
+        headers: { "X-Figma-Token": process.env.FIGMA_ACCESS_TOKEN },
+      });
+      if (!resp.ok) {
+        throw new Error(`Figma API error: ${resp.status}`);
+      }
+      const data = await resp.json();
+      const node = data.nodes[nodeId]?.document;
+      if (!node) throw new Error(`Node ID '${nodeId}' not found in file.`);
+      finalJsonString = JSON.stringify(node);
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: `Figma fetch failed: ${e.message}` }), {
+        status: 500, headers: { "Content-Type": "application/json" }
+      });
+    }
+  } else {
+    // Validate it looks like JSON if not a URL
+    try {
+      JSON.parse(figmaJson);
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Input must be valid JSON or a Figma URL." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
   }
 
   // Truncate if very large to fit context window
-  const truncated = figmaJson.length > 8000
-    ? figmaJson.slice(0, 8000) + "\n... (truncated)"
-    : figmaJson;
+  const truncated = finalJsonString.length > 8000
+    ? finalJsonString.slice(0, 8000) + "\n... (truncated)"
+    : finalJsonString;
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Convert this Figma JSON into a React component prompt:\n\n${truncated}` },
-      ],
-      stream: false,
-      max_tokens: 300,
-      temperature: 0.4,
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction: SYSTEM_PROMPT,
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: 300,
+      }
     });
 
-    const prompt = completion.choices[0]?.message?.content?.trim() ?? "";
+    const result = await model.generateContent(`Convert this Figma JSON into a React component prompt:\n\n${truncated}`);
+    const prompt = result.response.text().trim() ?? "";
 
     return new Response(JSON.stringify({ prompt }), {
       headers: { "Content-Type": "application/json" },

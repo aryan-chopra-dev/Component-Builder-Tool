@@ -170,14 +170,15 @@ export default function Generator() {
     setActiveTab("variants");
 
     const variantPrompts = [
-      `Variant A — a slightly different visual style: ${lastPrompt}`,
-      `Variant B — an alternative design approach: ${lastPrompt}`,
+      `VARIANT A: Drastically redesign this. Change the layout entirely (e.g. from vertical to horizontal grid). Use very different spacing, a minimalist structured look, subtle borders, and new styling for: ${lastPrompt}`,
+      `VARIANT B: Drastically redesign this. Use a completely different layout. Make it look bold, modern, and high-end with soft shadows, glassmorphism, or floating rounded elements for: ${lastPrompt}`,
     ];
 
     const body = (vp: string) => JSON.stringify({
       prompt: vp,
       currentCode: lastCode,
       brandConfig: brandConfig.enabled ? brandConfig : undefined,
+      temperature: 0.95,
     });
 
     const fetchVariant = async (vp: string, index: number) => {
@@ -321,7 +322,7 @@ export default function Generator() {
           )}
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <Zap size={12} className="text-yellow-400" />
-            Powered by Groq · Llama 3.3 70B
+            Powered by Gemini 2.5 Flash
           </div>
         </div>
       </header>

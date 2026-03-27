@@ -9,6 +9,9 @@ RULES:
 6. The component must be self-contained with realistic placeholder data.
 7. For interactive components, use useState for state management.
 8. Always wrap in a centered container with appropriate padding.
+9. NEVER use unsplash.com image URLs (they break the stream). ALWAYS use simple placeholder UI images like \`https://picsum.photos/seed/1/800/600\` or \`https://placehold.co/600x400\`.
+10. NEVER use deprecated string refs (\`ref="myRef"\`). ALWAYS use the useRef hook (\`ref={myRef}\`).
+11. Do NOT use lucide-react or external icon libraries. If you need icons, write raw inline <svg> tags so they render natively.
 
 OUTPUT FORMAT — respond with ONLY this, nothing else:
 function GeneratedComponent() {

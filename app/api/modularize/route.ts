@@ -1,6 +1,4 @@
-import Groq from "groq-sdk";
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const MODULARIZE_SYSTEM_PROMPT = `You are an expert React architect. Your job is to split a monolithic React component into well-named atomic sub-components.
 
@@ -32,30 +30,27 @@ export async function POST(req: Request) {
     });
   }
 
-  if (!process.env.GROQ_API_KEY) {
-    return new Response(JSON.stringify({ error: "GROQ_API_KEY is not configured" }), {
+  if (!process.env.GEMINI_API_KEY) {
+    return new Response(JSON.stringify({ error: "GEMINI_API_KEY is not configured" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
   }
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: MODULARIZE_SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: `Split this component into atomic files:\n\n${code}`,
-        },
-      ],
-      stream: false,
-      max_tokens: 4000,
-      temperature: 0.3,
-      response_format: { type: "json_object" },
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction: MODULARIZE_SYSTEM_PROMPT,
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 8192,
+        responseMimeType: "application/json",
+      }
     });
 
-    const raw = completion.choices[0]?.message?.content ?? "{}";
+    const result = await model.generateContent(`Split this component into atomic files:\n\n${code}`);
+    const raw = result.response.text();
 
     let files: Record<string, string>;
     try {

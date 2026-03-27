@@ -7,7 +7,7 @@ Built as an extremely robust alternative to basic AI generators (like v0 or Bolt
 ## 🌟 Key Features
 
 ### 1. Visual DOM Targeting (Iterative Chat-to-Edit)
-Instead of re-generating an entire UI to change a single button, click any element in the live preview iframe. The element's exact HTML is passed to the LLM (Groq Llama 3) along with your new instruction, ensuring hyper-precise edits without breaking the rest of the component.
+Instead of re-generating an entire UI to change a single button, click any element in the live preview iframe. The element's exact HTML is passed to the LLM (Gemini 2.5 Flash) along with your new instruction, ensuring hyper-precise edits without breaking the rest of the component.
 
 ### 2. Strict Brand Enforcement
 Lock the AI into your company's design system. Configure your primary, secondary, background, and text colors along with font family and border radius. This injects hard constraints into the LLM system prompt and dynamically overrides CSS variables in the sandboxed preview, guaranteeing 100% brand adherence.
@@ -32,14 +32,14 @@ Test how the AI's Tailwind utility classes hold up across devices. Toggle the li
 *   **Framework:** Next.js 14 (App Router)
 *   **Language:** TypeScript
 *   **Styling:** Tailwind CSS
-*   **AI SDK:** Groq Cloud (Llama 3.3 70B Versatile model)
+*   **AI SDK:** Google Generative AI (`gemini-2.5-flash` model)
 *   **Sandboxing:** React + Babel standalone compiled in-browser via `srcdoc` iframes
 *   **Icons:** `lucide-react`
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-You will need Node.js installed on your machine and a free [Groq API Key](https://console.groq.com/keys).
+You will need Node.js installed on your machine and a free [Gemini API Key](https://aistudio.google.com/app/apikey).
 
 ### Installation
 
@@ -55,11 +55,11 @@ You will need Node.js installed on your machine and a free [Groq API Key](https:
     ```
 
 3.  **Set up Environment Variables:**
-    Copy the sample environment file and add your Groq API key:
+    Copy the sample environment file and add your Gemini API key:
     ```bash
     cp .env.local.example .env.local
     ```
-    Open `.env.local` and add your key: `GROQ_API_KEY=gsk_your_api_key_here`
+    Open `.env.local` and add your key: `GEMINI_API_KEY=your_api_key_here`
 
 4.  **Run the development server:**
     ```bash
